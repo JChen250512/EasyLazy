@@ -1,0 +1,146 @@
+/* --- CSS 樣式區 --- */
+:root {
+    --primary-color: #d4a373; /* 質感奶茶色 */
+    --bg-color: #fefae0;      /* 柔和背景 */
+    --text-color: #4a4a4a;
+    --accent-color: #faedcd; /* 淺黃色點綴 */
+}
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    background: white;
+    width: 100%;
+    max-width: 500px; /* 手機版寬度優化 */
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+h1 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 25px;
+    font-size: 0.9em;
+}
+
+/* 表單元素通用樣式 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+input[type="date"], input[type="text"], input[type="tel"], select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+    background-color: var(--accent-color);
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* 時段選擇區塊 */
+.time-selection {
+    padding: 15px;
+    border: 1px dashed var(--primary-color);
+    border-radius: 10px;
+    background-color: var(--accent-color);
+}
+
+#timeSlotsContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.time-btn {
+    padding: 10px 5px;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    background-color: white;
+    color: var(--primary-color);
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.time-btn:hover:not([disabled]) {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* 選中狀態 */
+.time-btn.selected {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* 禁用狀態 */
+.time-btn:disabled {
+    background-color: #f0f0f0;
+    color: #b0b0b0;
+    border-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+    text-decoration: line-through;
+}
+
+/* 提交按鈕 */
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background-color: #c09060; 
+}
+
+.submit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.note {
+    font-size: 0.8em;
+    text-align: center;
+    color: #888;
+    margin-top: 20px;
+}
