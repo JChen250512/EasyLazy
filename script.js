@@ -2,7 +2,7 @@
 
 // ⭐ 全域變數：您的 Google Apps Script 網址 ⭐
 // ⚠️ 務必將這裡替換成您自己的 GOOGLE SCRIPT 網址 ⚠️
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHV8KLPw390a8MIgQg1YTTt-g5B_ughmXB86jajc32dcBjmkaQ0p7vQ8qA99mPtPNY/exec'; 
+const GOOGLE_SCRIPT_URL = "placeholder_url"; // 這是佔位符，會被替換
 
 // 1. 服務時間對照表 (不再用於衝突計算，但保留)
 const SERVICE_DETAILS = {
@@ -234,4 +234,5 @@ window.onload = function() {
 
     // 觸發更新
     updateServiceInfo();
+
 };
