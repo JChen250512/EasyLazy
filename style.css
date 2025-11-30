@@ -139,8 +139,9 @@ input:focus, select:focus {
 }
 
 .note {
-    font-size: 0.8em;
+    font-size: 0.7em;
     text-align: center;
     color: #888;
     margin-top: 20px;
+
 }
