@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LazyEasy線上預約</title>
+    <style>
+        /* --- CSS 樣式區 --- */
+        :root {
+            --primary-color: #d4a373; /* 質感奶茶色 */
+            --bg-color: #fefae0;      /* 柔和背景 */
+            --text-color: #4a4a4a;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 500px; /* 手機版寬度優化 */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        select, input[type="text"], input[type="tel"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+        }
+
+        /* 服務卡片樣式 (模擬選單) */
+        .service-info {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            display: none; /* 預設隱藏 */
+        }
+
+        /* 時段按鈕區域 */
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .time-btn {
+            padding: 10px;
+            border: 1px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .time-btn.selected {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .time-btn:disabled {
+            background: #eee;
+            border-color: #ddd;
+            color: #aaa;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        /* 送出按鈕 */
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>LazyEasy美睫預約</h1>
+    
+    <form id="bookingForm">
+        <div class="form-group">
+            <label for="service">選擇服務項目</label>
+            <select id="service" required onchange="updateServiceInfo()">
+                <option value="" disabled selected>請選擇...</option>
+                <option value="3d_natural" data-price="1200" data-time="90">3D 自然裸妝款 (90分)</option>
+                <option value="6d_volume" data-price="1800" data-time="120">6D 輕盈爆濃款 (120分)</option>
+                <option value="remove" data-price="500" data-time="30">他店卸除 (30分)</option>
+            </select>
+            <div id="serviceDetail" class="service-info">
+                💰 價格: <span id="priceDisplay">0</span> 元 | ⏱ 時間: <span id="timeDisplay">0</span> 分鐘
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="staff">指定美睫師</label>
+            <select id="staff" required>
+                <option value="any">不指定 (最快安排)</option>
+                <option value="peggy">Peggy 老師</option>
+                <!--
+				<option value="claire">Claire 老師</option>
+				-->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="date">預約日期</label>
+            <input type="date" id="date" required onchange="generateTimeSlots()">
+        </div>
+
+        <div class="form-group">
+            <label>選擇時段</label>
+            <div id="timeSlotsContainer" class="time-slots">
+                <div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇日期</div>
+            </div>
+            <input type="hidden" id="selectedTime" required>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div class="form-group">
+            <label for="name">您的姓名</label>
+            <input type="text" id="name" placeholder="請輸入姓名" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">聯絡電話</label>
+            <input type="tel" id="phone" placeholder="09xx-xxx-xxx" required>
+        </div>
+		
+		<div style="display:none;">
+			<label for="nickname">請勿填寫</label>
+			<input type="text" id="nickname" name="nickname">
+		</div>
+
+        <button type="submit" class="submit-btn">確認預約</button>
+    </form>
+</div>
+
+<script>
+    // --- JavaScript 邏輯區 ---
+
+    // 1. 更新服務資訊顯示
+    function updateServiceInfo() {
+        const serviceSelect = document.getElementById('service');
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+        const detailDiv = document.getElementById('serviceDetail');
+        
+        if (selectedOption.value) {
+            document.getElementById('priceDisplay').innerText = selectedOption.dataset.price;
+            document.getElementById('timeDisplay').innerText = selectedOption.dataset.time;
+            detailDiv.style.display = 'block';
+        }
+    }
+
+    // 2. 模擬產生時段 (實際開發時，這裡會呼叫後端 API 檢查是否有空位)
+    function generateTimeSlots() {
+        const container = document.getElementById('timeSlotsContainer');
+        const dateInput = document.getElementById('date').value;
+        container.innerHTML = ''; // 清空舊按鈕
+
+        if (!dateInput) return;
+
+        // 模擬營業時間 10:00 - 18:00
+        const startHour = 10;
+        const endHour = 18;
+        
+        // 模擬一些已經被預約的時段 (例如 14:00)
+        const bookedSlots = ['14:00'];
+
+        for (let i = startHour; i <= endHour; i++) {
+            const timeLabel = `${i}:00`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'time-btn';
+            btn.innerText = timeLabel;
+
+            // 檢查是否被預約
+            if (bookedSlots.includes(timeLabel)) {
+                btn.disabled = true;
+                btn.title = "已預約";
+            } else {
+                btn.onclick = function() {
+                    selectTime(this, timeLabel);
+                };
+            }
+            container.appendChild(btn);
+        }
+    }
+
+    // 3. 處理時段選擇
+    function selectTime(btn, time) {
+        // 清除其他按鈕的選取狀態
+        const allBtns = document.querySelectorAll('.time-btn');
+        allBtns.forEach(b => b.classList.remove('selected'));
+        
+        // 設定當前按鈕
+        btn.classList.add('selected');
+        document.getElementById('selectedTime').value = time;
+    }
+
+// ... 前面的程式碼保持不變 ...
+
+    // 4. 送出表單 (已連接 Google Sheet)
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // 阻止頁面預設跳轉
+
+        const submitBtn = document.querySelector('.submit-btn');
+        
+        // 獲取資料
+        const service = document.getElementById('service').options[document.getElementById('service').selectedIndex].text;
+        const staff = document.getElementById('staff').options[document.getElementById('staff').selectedIndex].text;
+        const date = document.getElementById('date').value;
+        const time = document.getElementById('selectedTime').value;
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+		const nickname = document.getElementById('nickname').value; // 獲取蜜罐欄位的值
+
+		// 檢查蜜罐：如果這個隱藏欄位有值，就判定為機器人並中止預約
+		if (nickname.length > 0) {
+			console.warn("偵測到機器人行為，已阻止提交。");
+			alert("提交失敗，請勿重複提交。"); 
+			e.preventDefault();
+			return; 
+		}
+
+        if (!time) {
+            alert('請選擇預約時段！');
+            return;
+        }
+
+        // --- 設定您剛剛複製的 Google Apps Script 網址 ---
+        // 請將下方的網址換成您自己的 Web App URL
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbzHV8KLPw390a8MIgQg1YTTt-g5B_ughmXB86jajc32dcBjmkaQ0p7vQ8qA99mPtPNY/exec'; 
+
+        // 鎖定按鈕避免重複點擊
+        submitBtn.disabled = true;
+        submitBtn.innerText = "預約傳送中...";
+
+        // 打包資料
+        const formData = {
+            service: service,
+            staff: staff,
+            date: date,
+            time: time,
+            name: name,
+            phone: phone
+        };
+
+        // 發送資料到 Google Sheet
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify(formData),
+            mode: 'no-cors', // 重要：跨網域設定
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
+        .then(() => {
+            // 成功後的動作
+            alert(`✅ 預約成功！\n\n感謝 ${name} 的預約\n我們已將資訊傳送至系統。`);
+            // 重置表單
+            document.getElementById('bookingForm').reset();
+            document.getElementById('timeSlotsContainer').innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇日期</div>';
+            document.getElementById('serviceDetail').style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "確認預約";
+        })
+        .catch(error => {
+            console.error('Error!', error.message);
+            alert('❌ 系統忙碌中，請稍後再試，或直接聯繫我們。');
+            submitBtn.disabled = false;
+            submitBtn.innerText = "確認預約";
+        });
+    });
+</script>
+
+</body>
+</html>
