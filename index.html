@@ -182,141 +182,264 @@
 </div>
 
 <script>
-    // --- JavaScript 邏輯區 ---
+// --- JavaScript 邏輯區 ---
 
-    // 1. 更新服務資訊顯示
-    function updateServiceInfo() {
-        const serviceSelect = document.getElementById('service');
-        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-        const detailDiv = document.getElementById('serviceDetail');
+// 1. 服務時間對照表 (用於計算衝突)
+const SERVICE_DETAILS = {
+    '3d_natural': { text: '3D 自然裸妝款', price: 1200, time: 90 },
+    '6d_volume': { text: '6D 輕盈爆濃款', price: 1800, time: 120 },
+    'remove': { text: '他店卸除', price: 500, time: 30 }
+};
+
+// 2. 輔助函式：時間處理 (將 HH:MM 轉為分鐘數)
+function timeToMinutes(timeStr) {
+    const [hour, minute] = timeStr.split(':').map(Number);
+    return hour * 60 + minute;
+}
+
+// 3. 輔助函式：檢查兩個時段是否衝突
+// SlotStartMin/SlotEndMin 是我們要檢查的空檔 (例如 15:00 - 16:30)
+// BookedStartMin/BookedEndMin 是已預約的時段 (例如 14:00 - 16:00)
+function isTimeConflict(SlotStartMin, SlotEndMin, BookedStartMin, BookedEndMin) {
+    // 檢查是否有重疊：如果結束時間在對方開始時間之後 AND 開始時間在對方結束時間之前
+    return SlotStartMin < BookedEndMin && SlotEndMin > BookedStartMin;
+}
+
+// 4. 更新服務資訊顯示 (與舊版相同，但現在會儲存 duration)
+let selectedServiceDuration = 0; // 全域變數，儲存選定的服務時長
+function updateServiceInfo() {
+    const serviceSelect = document.getElementById('service');
+    const serviceKey = serviceSelect.value;
+    const detailDiv = document.getElementById('serviceDetail');
+    
+    if (serviceKey) {
+        const detail = SERVICE_DETAILS[serviceKey];
+        document.getElementById('priceDisplay').innerText = detail.price;
+        document.getElementById('timeDisplay').innerText = detail.time;
+        detailDiv.style.display = 'block';
         
-        if (selectedOption.value) {
-            document.getElementById('priceDisplay').innerText = selectedOption.dataset.price;
-            document.getElementById('timeDisplay').innerText = selectedOption.dataset.time;
-            detailDiv.style.display = 'block';
-        }
+        // 儲存選定服務的時長
+        selectedServiceDuration = detail.time;
+
+        // 更新服務後，自動重新生成時段
+        generateTimeSlots();
+    } else {
+         detailDiv.style.display = 'none';
+         selectedServiceDuration = 0;
     }
+}
 
-    // 2. 模擬產生時段 (實際開發時，這裡會呼叫後端 API 檢查是否有空位)
-    function generateTimeSlots() {
-        const container = document.getElementById('timeSlotsContainer');
-        const dateInput = document.getElementById('date').value;
-        container.innerHTML = ''; // 清空舊按鈕
 
-        if (!dateInput) return;
+// 5. 從 Google Sheet 讀取所有預約資料
+async function fetchBookedAppointments(date) {
+    // 使用您在步驟三拿到的 Web App URL (POST & GET 皆用此網址)
+    const scriptURL = '請在這裡貼上您的_GOOGLE_SCRIPT_網址'; 
 
-        // 模擬營業時間 10:00 - 18:00
-        const startHour = 10;
-        const endHour = 18;
-        
-        // 模擬一些已經被預約的時段 (例如 14:00)
-        const bookedSlots = ['14:00'];
-
-        for (let i = startHour; i <= endHour; i++) {
-            const timeLabel = `${i}:00`;
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'time-btn';
-            btn.innerText = timeLabel;
-
-            // 檢查是否被預約
-            if (bookedSlots.includes(timeLabel)) {
-                btn.disabled = true;
-                btn.title = "已預約";
-            } else {
-                btn.onclick = function() {
-                    selectTime(this, timeLabel);
-                };
-            }
-            container.appendChild(btn);
-        }
-    }
-
-    // 3. 處理時段選擇
-    function selectTime(btn, time) {
-        // 清除其他按鈕的選取狀態
-        const allBtns = document.querySelectorAll('.time-btn');
-        allBtns.forEach(b => b.classList.remove('selected'));
-        
-        // 設定當前按鈕
-        btn.classList.add('selected');
-        document.getElementById('selectedTime').value = time;
-    }
-
-// ... 前面的程式碼保持不變 ...
-
-    // 4. 送出表單 (已連接 Google Sheet)
-    document.getElementById('bookingForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // 阻止頁面預設跳轉
-
-        const submitBtn = document.querySelector('.submit-btn');
-        
-        // 獲取資料
-        const service = document.getElementById('service').options[document.getElementById('service').selectedIndex].text;
-        const staff = document.getElementById('staff').options[document.getElementById('staff').selectedIndex].text;
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('selectedTime').value;
-        const name = document.getElementById('name').value;
-        const phone = document.getElementById('phone').value;
-		const nickname = document.getElementById('nickname').value; // 獲取蜜罐欄位的值
-
-		// 檢查蜜罐：如果這個隱藏欄位有值，就判定為機器人並中止預約
-		if (nickname.length > 0) {
-			console.warn("偵測到機器人行為，已阻止提交。");
-			alert("提交失敗，請勿重複提交。"); 
-			e.preventDefault();
-			return; 
-		}
-
-        if (!time) {
-            alert('請選擇預約時段！');
-            return;
-        }
-
-        // --- 設定您剛剛複製的 Google Apps Script 網址 ---
-        // 請將下方的網址換成您自己的 Web App URL
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbzHV8KLPw390a8MIgQg1YTTt-g5B_ughmXB86jajc32dcBjmkaQ0p7vQ8qA99mPtPNY/exec'; 
-
-        // 鎖定按鈕避免重複點擊
-        submitBtn.disabled = true;
-        submitBtn.innerText = "預約傳送中...";
-
-        // 打包資料
-        const formData = {
-            service: service,
-            staff: staff,
-            date: date,
-            time: time,
-            name: name,
-            phone: phone
-        };
-
-        // 發送資料到 Google Sheet
-        fetch(scriptURL, {
-            method: 'POST',
-            body: JSON.stringify(formData),
-            mode: 'no-cors', // 重要：跨網域設定
-            headers: {
-                'Content-Type': 'text/plain'
-            }
-        })
-        .then(() => {
-            // 成功後的動作
-            alert(`✅ 預約成功！\n\n感謝 ${name} 的預約\n我們已將資訊傳送至系統。`);
-            // 重置表單
-            document.getElementById('bookingForm').reset();
-            document.getElementById('timeSlotsContainer').innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇日期</div>';
-            document.getElementById('serviceDetail').style.display = 'none';
-            submitBtn.disabled = false;
-            submitBtn.innerText = "確認預約";
-        })
-        .catch(error => {
-            console.error('Error!', error.message);
-            alert('❌ 系統忙碌中，請稍後再試，或直接聯繫我們。');
-            submitBtn.disabled = false;
-            submitBtn.innerText = "確認預約";
+    try {
+        const response = await fetch(scriptURL, {
+            method: 'GET'
         });
+        
+        if (!response.ok) {
+            console.error('Fetch error:', response.statusText);
+            return [];
+        }
+        
+        const allAppointments = await response.json();
+        
+        // 過濾出與所選日期相符的預約
+        const todayBookings = allAppointments.filter(app => 
+            // 試算表中的日期格式是 YYYY/MM/DD, 網頁選取的是 YYYY-MM-DD
+            app['預約日期'] && app['預約日期'].includes(date.replace(/-/g, '/'))
+        );
+        
+        return todayBookings;
+
+    } catch (error) {
+        console.error('讀取預約資料失敗:', error);
+        return [];
+    }
+}
+
+
+// 6. 模擬產生時段 (包含衝突檢查邏輯)
+async function generateTimeSlots() {
+    const container = document.getElementById('timeSlotsContainer');
+    const dateInput = document.getElementById('date');
+    const selectedDate = dateInput.value;
+    
+    container.innerHTML = ''; // 清空舊按鈕
+    
+    // 檢查是否已選擇服務和日期
+    if (selectedServiceDuration === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇服務項目與日期</div>';
+        return;
+    }
+
+    if (!selectedDate) {
+         container.innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請選擇日期</div>';
+         return;
+    }
+    
+    // 讀取當日已預約的資料
+    const bookedAppointments = await fetchBookedAppointments(selectedDate);
+    
+    // 模擬營業時間 10:00 - 18:00 (每 30 分鐘一個時段)
+    const startHour = 10;
+    const endHour = 18;
+    const intervalMinutes = 30; // 以 30 分鐘為最小預約單位
+
+    let availableCount = 0;
+
+    for (let currentMin = timeToMinutes(`${startHour}:00`); 
+         currentMin < timeToMinutes(`${endHour}:00`); 
+         currentMin += intervalMinutes) {
+        
+        // 將分鐘轉回 HH:MM 格式
+        const hour = Math.floor(currentMin / 60);
+        const minute = currentMin % 60;
+        const timeLabel = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'time-btn';
+        btn.innerText = timeLabel;
+
+        // --- 核心衝突檢查邏輯 ---
+        let isBooked = false;
+        
+        // 1. 計算客戶所需時段 (從當前時段開始，加上服務時長)
+        const clientSlotStartMin = currentMin;
+        const clientSlotEndMin = currentMin + selectedServiceDuration; 
+
+        // 2. 確保結束時間在營業時間內
+        if (clientSlotEndMin > timeToMinutes(`${endHour}:00`)) {
+             // 如果此時段預約下去會超過營業時間，則不可選
+             isBooked = true;
+        } else {
+            // 3. 檢查與所有已預約時段的衝突
+            for (const app of bookedAppointments) {
+                // 從服務項目名稱，反查已預約單的時長
+                const bookedServiceKey = Object.keys(SERVICE_DETAILS).find(key => 
+                    SERVICE_DETAILS[key].text === app['服務項目']
+                );
+                
+                // 假設預約單的時長為 90 分鐘 (如果找不到服務項目就給一個預設值)
+                const bookedDuration = bookedServiceKey ? SERVICE_DETAILS[bookedServiceKey].time : 90;
+                
+                const bookedStartMin = timeToMinutes(app['預約時段']);
+                const bookedEndMin = bookedStartMin + bookedDuration;
+
+                if (isTimeConflict(clientSlotStartMin, clientSlotEndMin, bookedStartMin, bookedEndMin)) {
+                    isBooked = true;
+                    break; // 找到一個衝突就停止檢查
+                }
+            }
+        }
+        
+        if (isBooked) {
+            btn.disabled = true;
+            btn.title = "時段已被預約或長度不足";
+        } else {
+            btn.onclick = function() {
+                selectTime(this, timeLabel);
+            };
+            availableCount++;
+        }
+        
+        container.appendChild(btn);
+    } // End of time slot loop
+
+    if (availableCount === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">本日已無空檔，請選擇其他日期</div>';
+    }
+}
+
+
+// 7. 處理時段選擇 (與舊版相同)
+function selectTime(btn, time) {
+    const allBtns = document.querySelectorAll('.time-btn');
+    allBtns.forEach(b => b.classList.remove('selected'));
+    
+    btn.classList.add('selected');
+    document.getElementById('selectedTime').value = time;
+}
+
+// 8. 送出表單 (與舊版相同，請務必替換您的網址)
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // 阻止頁面跳轉
+
+    const submitBtn = document.querySelector('.submit-btn');
+    
+    // 獲取資料
+    const serviceElement = document.getElementById('service');
+    const service = serviceElement.options[serviceElement.selectedIndex].text;
+    const staff = document.getElementById('staff').options[document.getElementById('staff').selectedIndex].text;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('selectedTime').value;
+    const name = document.getElementById('name').value;
+    const phone = document.getElementById('phone').value;
+
+    const nickname = document.getElementById('nickname') ? document.getElementById('nickname').value : '';
+    
+    if (nickname.length > 0) {
+        console.warn("偵測到機器人行為，已阻止提交。");
+        alert("提交失敗，請勿重複提交。"); 
+        return;
+    }
+
+    if (!time) {
+        alert('請選擇預約時段！');
+        return;
+    }
+
+    // --- 設定您剛剛複製的 Google Apps Script 網址 ---
+    const scriptURL = '請在這裡貼上您的_GOOGLE_SCRIPT_網址'; 
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = "預約傳送中...";
+
+    // 打包資料
+    const formData = {
+        service: service,
+        staff: staff,
+        date: date,
+        time: time,
+        name: name,
+        phone: phone
+    };
+
+    // 發送資料到 Google Sheet (使用 POST)
+    fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        mode: 'no-cors', 
+        headers: {
+            'Content-Type': 'text/plain'
+        }
+    })
+    .then(() => {
+        alert(`✅ 預約成功！\n\n感謝 ${name} 的預約\n我們已將資訊傳送至系統。`);
+        document.getElementById('bookingForm').reset();
+        document.getElementById('timeSlotsContainer').innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇服務項目與日期</div>';
+        document.getElementById('serviceDetail').style.display = 'none';
+        submitBtn.disabled = false;
+        submitBtn.innerText = "確認預約";
+        // 成功後重設 selectedServiceDuration
+        selectedServiceDuration = 0; 
+    })
+    .catch(error => {
+        console.error('Error!', error.message);
+        alert('❌ 系統忙碌中，請稍後再試，或直接聯繫我們。');
+        submitBtn.disabled = false;
+        submitBtn.innerText = "確認預約";
     });
+});
+
+// 初始化：確保網頁加載時 updateServiceInfo 被執行一次
+window.onload = function() {
+    updateServiceInfo();
+};
 </script>
 
 </body>
