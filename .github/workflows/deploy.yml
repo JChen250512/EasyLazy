@@ -1,0 +1,12 @@
+# ... 其他設定 ...
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+
+  - name: Inject API URL into script.js
+    run: |
+      # 替換 script.js 檔案中的 placeholder 文本
+      sed -i 's|const GOOGLE_SCRIPT_URL = "placeholder_url";|const GOOGLE_SCRIPT_URL = "${{ secrets.GAS_WEB_APP_URL }}";|' script.js
+
+  - name: Deploy to GitHub Pages
+    # ... 接著運行您的 GitHub Pages 部署步驟 ...
