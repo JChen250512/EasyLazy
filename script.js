@@ -72,12 +72,18 @@ async function generateTimeSlots() {
          return;
     }
 
-    // ⭐ 關鍵修正：顯示加載提示 ⭐
+    // 顯示加載提示 
     container.innerHTML = '<div style="grid-column: 1/-1; color: var(--primary-color); text-align: center; font-weight: bold;">預約資料加載中...</div>';
     
     // 判斷是平日還是假日，設定固定可選時段
     const selectedDate = new Date(selectedDateStr);
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const minDate = new Date("2025-12-19");  // Peggy說要19號後才開放
+
+    if (selectedDate < minDate) {
+        alert("⚠️ 請選擇 2025-12-19 或之後的日期！");
+        return;
+    }
 
     let fixedSlots = [];
     if (dayOfWeek >= 1 && dayOfWeek <= 5) { // 平日 (一到五)
@@ -92,7 +98,7 @@ async function generateTimeSlots() {
     // 讀取當日已預約的資料
     const bookedAppointments = await fetchBookedAppointments(selectedDateStr);
     
-    // ⭐ 關鍵修正：再次清空加載提示，準備顯示時段按鈕或錯誤訊息 ⭐
+    // 再次清空加載提示，準備顯示時段按鈕或錯誤訊息
     container.innerHTML = ''; 
     
     // 從已預約的資料中提取時段字串
