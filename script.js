@@ -55,9 +55,8 @@ async function generateTimeSlots() {
     const selectedDate = new Date(parts[0], parts[1]-1, parts[2]);
 
     if (selectedDate < minDate) {
-        alert("⚠️ 請選擇 2025-12-19 或之後的日期！");
-        dateInput.value = "2025-12-19";
-        updateServiceInfo();
+        // 不加載資料，直接顯示提示
+        container.innerHTML = '<div style="grid-column:1/-1;color:#888;text-align:center;">本日已無空檔，請選擇其他日期</div>';
         return;
     }
 
@@ -165,3 +164,4 @@ window.addEventListener('load', function() {
     dateInput.value = "2025-12-19";
     updateServiceInfo();
 });
+
