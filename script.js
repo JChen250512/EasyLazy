@@ -1,7 +1,6 @@
 // --- JavaScript 邏輯區 ---
 
-// ⭐ 全域變數：您的 Google Apps Script 網址 ⭐
-// ⚠️ 務必將這裡替換成您自己的 GOOGLE SCRIPT 網址 ⚠️
+// ⭐ 全域變數：Google Apps Script 網址 ⭐
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHV8KLPw390a8MIgQg1YTTt-g5B_ughmXB86jajc32dcBjmkaQ0p7vQ8qA99mPtPNY/exec'; 
 
 // 1. 服務時間對照表 (不再用於衝突計算，但保留)
@@ -230,10 +229,10 @@ window.onload = function() {
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('date').min = `${yyyy}-${mm}-${dd}`;
+    //document.getElementById('date').min = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('date').min = "2025-12-19";  // Peggy說要19號後才開放
 
     // 觸發更新
     updateServiceInfo();
 
 };
-
