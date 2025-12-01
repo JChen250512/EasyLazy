@@ -82,6 +82,7 @@ async function generateTimeSlots() {
 
     if (selectedDate < minDate) {
         alert("⚠️ 請選擇 2025-12-19 或之後的日期！");
+        dateInput.value = "";
         return;
     }
 
@@ -228,17 +229,13 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
     });
 });
 
-// 8. 初始化設定：設定最小可選日期為今天
+// 8. 初始化設定：設定最小可選日期為2025-12-19
 window.onload = function() {
-    // 設定日期輸入欄位的 min 屬性
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    //document.getElementById('date').min = `${yyyy}-${mm}-${dd}`;
-    document.getElementById('date').min = "2025-12-19";  // Peggy說要19號後才開放
+    const dateInput = document.getElementById('date');
 
-    // 觸發更新
-    updateServiceInfo();
+    dateInput.min = "2025-12-19";   // 限制最小日期
+    dateInput.value = "2025-12-19"; // 預設選中的日期
 
+    updateServiceInfo(); // 生成時段
 };
+
