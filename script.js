@@ -1,6 +1,6 @@
 // --- JavaScript 邏輯區 ---
 
-// ⭐ 全域變數：Google Apps Script 網址 ⭐
+// 全域變數：Google Apps Script 網址
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHV8KLPw390a8MIgQg1YTTt-g5B_ughmXB86jajc32dcBjmkaQ0p7vQ8qA99mPtPNY/exec'; 
 
 // 1. 服務時間對照表
@@ -53,12 +53,6 @@ async function generateTimeSlots() {
     const minDate = new Date(2025, 11, 19); // 月份從 0 開始
     const parts = selectedDateStr.split('-');
     const selectedDate = new Date(parts[0], parts[1]-1, parts[2]);
-
-    if (selectedDate < minDate) {
-        // 不加載資料，直接顯示提示
-        container.innerHTML = '<div style="grid-column:1/-1;color:#888;text-align:center;">本日已無空檔，請選擇其他日期</div>';
-        return;
-    }
 
     container.innerHTML = '<div style="grid-column:1/-1;color:var(--primary-color);text-align:center;font-weight:bold;">預約資料加載中...</div>';
 
@@ -113,10 +107,12 @@ function selectTime(btn, time) {
 }
 
 // 7. 送出表單
-document.getElementById('bookingForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const submitBtn = document.querySelector('.submit-btn');
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    e.preventDefault(); 
 
+    const submitBtn = document.querySelector('.submit-btn');
+    
+    // 獲取舊資料
     const serviceElement = document.getElementById('service');
     const service = serviceElement.options[serviceElement.selectedIndex].text;
     const staff = document.getElementById('staff').options[document.getElementById('staff').selectedIndex].text;
@@ -124,44 +120,116 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     const time = document.getElementById('selectedTime').value;
     const name = document.getElementById('name').value;
     const phone = document.getElementById('phone').value;
-    const nickname = document.getElementById('nickname')?.value || '';
 
+    // ✨ 獲取新資料 ✨
+    const email = document.getElementById('email').value.trim();
+    const historySelect = document.getElementById('history');
+    const history = historySelect.options[historySelect.selectedIndex].text; // 取得 "是" 或 "否" 的文字
+
+    // 蜜罐檢查 (保持不變)
+    const nickname = document.getElementById('nickname') ? document.getElementById('nickname').value : '';
     if (nickname.length > 0) {
-        alert("提交失敗，請勿重複提交。");
+        alert("提交失敗。"); return;
+    }
+
+    if (!time) {
+        alert('請選擇預約時段！');
         return;
     }
-    if (!time) { alert('請選擇預約時段！'); return; }
 
+    // ✨ 新增：Email 格式驗證 ✨
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+        alert('請輸入有效的電子郵件地址！');
+        return;
+    }
+
+    // 鎖定按鈕
     submitBtn.disabled = true;
     submitBtn.innerText = "預約傳送中...";
 
-    const formData = { service, staff, date, time, name, phone };
+    // ✨ 更新 formData 包裹新資料 ✨
+    const formData = {
+        service: service, 
+        staff: staff, 
+        date: date, 
+        time: time, 
+        name: name, 
+        phone: phone,
+        email: email,     // 新增
+        history: history  // 新增
+    };
 
-    try {
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(formData),
-            mode: 'no-cors',
-            headers: { 'Content-Type':'text/plain' }
-        });
-        // no-cors 無法讀取回應，僅假設成功
-        alert(`✅ 預約成功！\n\n感謝 ${name} 的預約`);
-        document.getElementById('bookingForm').reset();
-        document.getElementById('timeSlotsContainer').innerHTML = '<div style="grid-column:1/-1;color:#888;text-align:center;">請先選擇日期</div>';
-    } catch(err) {
-        console.error(err);
-        alert('❌ 系統忙碌中，請稍後再試，或直接聯繫我們。');
-    } finally {
+    // 發送資料 (使用全域變數 GOOGLE_SCRIPT_URL)
+    fetch(GOOGLE_SCRIPT_URL, { 
+        method: 'POST',
+        body: JSON.stringify(formData),
+        mode: 'no-cors', 
+        headers: { 'Content-Type': 'text/plain' }
+    })
+.then(() => {
+        alert(`✅ 預約成功！\n\n感謝 ${name} 的預約\n確認信將發送至：${email}`);
+        
+        // 手動清空資料欄位
+        document.getElementById('name').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('history').selectedIndex = 0; 
+        
+        // 重置時段顯示與按鈕
+        document.getElementById('timeSlotsContainer').innerHTML = '<div style="grid-column: 1/-1; color: #888; text-align: center;">請先選擇日期</div>';
         submitBtn.disabled = false;
         submitBtn.innerText = "確認預約";
-    }
+        
+        // 判斷日期限制
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const realTodayStr = `${yyyy}-${mm}-${dd}`; // 真正的今天 (例如 2025-12-01)
+        
+        const limitDateStr = "2025-12-19"; // 指定的限制日期
+
+        // 比較：如果「今天」比「限制日期」還早，就使用限制日期；否則使用今天
+        // 這樣等到 12/20 之後，系統就會自動開放當天預約，不用再改程式碼
+        let effectiveDate = realTodayStr;
+        if (realTodayStr < limitDateStr) {
+            effectiveDate = limitDateStr;
+        }
+        
+        const dateInput = document.getElementById('date');
+        dateInput.min = effectiveDate;   // 設定最小值
+        dateInput.value = effectiveDate; // 設定預設值
+        
+        // 重新觸發時段更新
+        updateServiceInfo();
+    })
+    .catch(error => {
+        console.error('Error!', error.message);
+        alert('❌ 系統忙碌中，請稍後再試。');
+        submitBtn.disabled = false;
+        submitBtn.innerText = "確認預約";
+    });
 });
 
 // 8. 初始化日期
 window.addEventListener('load', function() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const realTodayStr = `${yyyy}-${mm}-${dd}`;
+    
+    const limitDateStr = "2025-12-19";
+    
+    let effectiveDate = realTodayStr;
+    if (realTodayStr < limitDateStr) {
+        effectiveDate = limitDateStr;
+    }
+
     const dateInput = document.getElementById('date');
-    dateInput.min = "2025-12-19";
-    dateInput.value = "2025-12-19";
+    dateInput.min = effectiveDate;
+    dateInput.value = effectiveDate;
+    
     updateServiceInfo();
 });
-
