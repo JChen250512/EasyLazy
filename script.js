@@ -40,8 +40,8 @@ async function fetchBookedAppointments(date) {
 async function generateTimeSlots() {
     const container = document.getElementById('timeSlotsContainer');
     const dateInput = document.getElementById('date');
-    const selectedDateStr = dateInput.value;
-
+    const selectedDateStr = dateInput.value; // 記錄這次呼叫所針對的日期
+    
     container.innerHTML = '';
 
     if (!selectedDateStr) {
@@ -50,7 +50,6 @@ async function generateTimeSlots() {
     }
 
     // 處理最小日期限制
-    const minDate = new Date(2025, 11, 19); // 月份從 0 開始
     const parts = selectedDateStr.split('-');
     const selectedDate = new Date(parts[0], parts[1]-1, parts[2]);
 
@@ -62,13 +61,25 @@ async function generateTimeSlots() {
     if (dayOfWeek >= 1 && dayOfWeek <= 5) fixedSlots = ['19:00'];
     else if (dayOfWeek === 0 || dayOfWeek === 6) fixedSlots = ['10:00','13:30'];
     else {
+        // 如果這個邏輯分支不開放預約，就不需要後續的競態檢查
         container.innerHTML = '<div style="grid-column:1/-1;color:#888;text-align:center;">該日期不開放預約</div>';
         return;
     }
 
     // 讀取當日已預約資料
     const bookedAppointments = await fetchBookedAppointments(selectedDateStr);
+    
+    // ⭐ 關鍵修正：檢查日期是否在等待期間被更改 (解決非同步操作的競態條件) ⭐
+    if (dateInput.value !== selectedDateStr) {
+        // 如果在等待 Google Sheet 回應期間，使用者已經切換到另一個日期，
+        // 則忽略這次過時的結果，避免覆蓋最新的加載狀態。
+        console.log(`Aborting rendering for ${selectedDateStr} because date was changed to ${dateInput.value}`);
+        return; 
+    }
+    
+    // 只有在日期沒有改變的情況下，才繼續清除加載提示並渲染時段
     container.innerHTML = '';
+    
     const bookedTimes = bookedAppointments.map(app => app['預約時段']);
     const now = new Date();
     let availableCount = 0;
