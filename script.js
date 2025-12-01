@@ -11,6 +11,16 @@ const SERVICE_DETAILS = {
     'single_custom': { text: '日式單根嫁接-客製款', time: 1 }
 };
 
+// 休息日/不可預約日期列表 (格式: YYYY-MM-DD)
+// 這些日期將完全禁用，即便它們是平日或假日。
+const BLACKOUT_DATES = [
+    '2025-12-25', // 聖誕節休息
+    '2026-01-01', // 元旦休息
+    '2026-02-14', // 情人節休息
+];
+
+// ... (後面的 timeToMinutes, downloadICS 等函式保持不變)
+
 // 2. 輔助函式：時間轉分鐘數（保留）
 function timeToMinutes(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return 0;
@@ -126,11 +136,17 @@ async function generateTimeSlots() {
         return;
     }
 
+    // 檢查是否為休息日 
+    if (BLACKOUT_DATES.includes(selectedDateStr)) {
+        container.innerHTML = '<div style="grid-column:1/-1;color:red;text-align:center;font-weight:bold;">本日為公休日，不開放預約</div>';
+        return; // 如果是休息日，直接退出，不生成時段
+    }
+
     // 處理日期物件
     const parts = selectedDateStr.split('-');
     const selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    // 判斷平日/假日
+    // 判斷平日/假日 (原有邏輯不變)
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday
     let fixedSlots = [];
     if (dayOfWeek >= 1 && dayOfWeek <= 5) fixedSlots = ['19:00'];
@@ -140,7 +156,7 @@ async function generateTimeSlots() {
         return;
     }
 
-    //  從全域變數中，篩選出當日已預約資料 (效率極高) 
+    // 從全域變數中，篩選出當日已預約資料
     const bookedAppointments = allBookedRecords.filter(app =>
         app['預約日期']?.trim() === selectedDateStr
     );
