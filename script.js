@@ -101,29 +101,22 @@ function hideLoadingModal() {
     if (modal) modal.style.display = 'none';
 }
 
-//  4. 修改：從 Google Sheet 讀取所有預約資料 
+//  4. 修改：從 Google Sheet 讀取所有預約資料 (現在只會在載入時被呼叫一次) 
 async function prefetchAllBookedAppointments() {
     console.log('--- 開始預加載所有預約資料 ---');
     try {
-        const origin = document.location.origin; // 取得目前的網址來源 (e.g., https://jchen250512.github.io)
-        const urlWithOrigin = `${GOOGLE_SCRIPT_URL}?origin=${encodeURIComponent(origin)}`; // 將來源加入 URL 參數
-        
-        // 呼叫 Google Script
-        const response = await fetch(urlWithOrigin, { method: 'GET' }); 
-        
+        const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'GET' });
         if (!response.ok) throw new Error(response.statusText);
 
         const data = await response.json();
-        // 如果後端驗證失敗，會收到 success: false 的回覆
-        if (!data.success) {
-            console.error('後端驗證失敗:', data.message);
-            throw new Error(data.message);
-        }
-        
-        allBookedRecords = data.records || []; 
+        allBookedRecords = data.records || []; // 將所有資料儲存到全域變數
         console.log(`成功載入 ${allBookedRecords.length} 筆預約記錄。`);
     } catch (err) {
-        // ... (錯誤處理保持不變)
+        console.error('❌ 預加載預約資料失敗:', err);
+        allBookedRecords = [];
+        alert('❌ 無法讀取預約資料，請檢查網路連線或 Apps Script 部署。');
+        // 如果預加載失敗，強制保持 Modal 顯示，或至少禁用表單
+        showLoadingModal();
     }
 }
 
@@ -209,10 +202,7 @@ document.getElementById('bookingForm').addEventListener('submit', function (e) {
     e.preventDefault();
 
     const submitBtn = document.querySelector('.submit-btn');
-    
-    const origin = document.location.origin;
-    const urlWithOrigin = `${GOOGLE_SCRIPT_URL}?origin=${encodeURIComponent(origin)}`; // 將來源加入 URL 參數
-    
+
     // 獲取所有資料 (現在 HTML 已經有這些欄位了)
     const serviceElement = document.getElementById('service');
     const service = serviceElement.options[serviceElement.selectedIndex].text;
@@ -243,12 +233,10 @@ document.getElementById('bookingForm').addEventListener('submit', function (e) {
     };
 
     // 發送資料 (使用全域變數 GOOGLE_SCRIPT_URL)
-    fetch(urlWithOrigin, { // 呼叫 Google Script
+    fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(formData),
-        // 由於我們在 App Script 中加入了 CORS 處理，這裡可以保持 'no-cors' 或移除它，
-        // 但為了兼容性，建議保持您原有的設定（通常是 text/plain + no-cors）。
-        mode: 'no-cors', 
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' }
     })
         .then(async () => {
@@ -350,4 +338,3 @@ window.addEventListener('load', async function () {
     // 5. 觸發更新：顯示時段
     updateServiceInfo();
 });
-
