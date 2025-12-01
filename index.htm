@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta property="og:title" content="EasyLazy美睫預約 - 線上預訂專屬時段">
-	<meta property="og:description" content="提供日式單根嫁接-客製款服務。查看即時空檔，24小時線上預約。">
-	<meta property="og:type" content="website">
+    <meta property="og:title" content="EasyLazy美睫預約 - 線上預訂專屬時段">
+    <meta property="og:description" content="提供日式單根嫁接-客製款服務。查看即時空檔，24小時線上預約。">
+    <meta property="og:type" content="website">
     <title>EasyLazy線上預約</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="loadingModal" class="modal-overlay">
         <div class="modal-content">
@@ -38,12 +40,12 @@
                     <!--<option value="unspecified">不指定</option>-->
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="date">選擇預約日期</label>
                 <input type="date" id="date" required onchange="generateTimeSlots()">
             </div>
-            
+
             <div class="form-group time-selection">
                 <label>選擇可預約時段</label>
                 <div id="timeSlotsContainer">
@@ -51,12 +53,12 @@
                 </div>
                 <input type="hidden" id="selectedTime" name="selectedTime" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="name">您的姓名</label>
                 <input type="text" id="name" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="phone">聯絡電話 (例: 09XX-XXX-XXX)</label>
                 <input type="tel" id="phone" required pattern="[0-9]{4}[0-9]{6}">
@@ -85,15 +87,12 @@
 
             <p class="note">
                 請注意：送出後您的預約將直接成立，若需更改請通知我們。<br>
-				聯絡資訊：0931205203 廖先生
+                聯絡資訊：0931205203 廖先生
             </p>
         </form>
     </div>
-    
+
     <script src="script.js"></script>
 </body>
 
 </html>
-
-
-
