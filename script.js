@@ -19,8 +19,6 @@ const BLACKOUT_DATES = [
     '2026-02-14', // 情人節休息
 ];
 
-// ... (後面的 timeToMinutes, downloadICS 等函式保持不變)
-
 // 2. 輔助函式：時間轉分鐘數（保留）
 function timeToMinutes(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return 0;
