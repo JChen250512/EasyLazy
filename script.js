@@ -82,7 +82,7 @@ async function generateTimeSlots() {
 
     if (selectedDate < minDate) {
         alert("⚠️ 請選擇 2025-12-19 或之後的日期！");
-        dateInput.value = "";
+        dateInput.value = '2025-12-19';
         return;
     }
 
